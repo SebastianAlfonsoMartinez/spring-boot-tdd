@@ -14,9 +14,12 @@ import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -57,7 +60,7 @@ class MongoWeatherServiceTest
         WeatherReport weatherReport = new WeatherReport( location, 35f, 22f, "tester", new Date() );
         when( repository.findById( weatherReportId ) ).thenReturn( Optional.of( weatherReport ) );
         WeatherReport foundWeatherReport = weatherService.findById( weatherReportId );
-        Assertions.assertEquals( weatherReport, foundWeatherReport );
+        assertEquals( weatherReport, foundWeatherReport );
     }
 
     @Test
@@ -69,5 +72,41 @@ class MongoWeatherServiceTest
             weatherService.findById( weatherReportId );
         } );
     }
+
+    @Test
+    public void findNearLocationTest() {
+        GeoLocation testLocation = new GeoLocation(4.7110, 74.0721);
+        float range = 10000; // 10 km
+
+        List<WeatherReport> allReports = new ArrayList<>();
+        allReports.add(new WeatherReport(new GeoLocation(4.7115, 74.0725), 25
+                , 60, "reporter1", new Date()));
+        allReports.add(new WeatherReport(new GeoLocation(5.0, 75.0), 26
+                , 65, "reporter2", new Date()));
+
+        when(repository.findAll()).thenReturn(allReports);
+
+        List<WeatherReport> foundReports = weatherService.findNearLocation(testLocation, range);
+
+        assertEquals(1, foundReports.size());
+        verify(repository).findAll();
+    }
+
+    @Test
+    public void findWeatherReportsByNameTest() {
+        String reporterName = "reporter1";
+
+        List<WeatherReport> reportsByName = new ArrayList<>();
+        reportsByName.add(new WeatherReport(new GeoLocation(4.7110, 74.0721), 25
+                , 60, reporterName, new Date()));
+
+        when(repository.findByReporter(reporterName)).thenReturn(reportsByName);
+
+        List<WeatherReport> foundReports = weatherService.findWeatherReportsByName(reporterName);
+
+        assertEquals(reportsByName, foundReports);
+        verify(repository).findByReporter(reporterName);
+    }
+
 
 }
